@@ -1,0 +1,23 @@
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+###< symfony/framework-bundle ###
+
+# Ignore the entire vendor directory first
+/vendor/
+
+# Un-ignore the specific vendor folder you want to keep
+# !/vendor/uvdesk/
+
+# If you need to keep other vendor folders, repeat the above line for each one.
+# For example:
+# !/vendor/another-folder/
+
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
