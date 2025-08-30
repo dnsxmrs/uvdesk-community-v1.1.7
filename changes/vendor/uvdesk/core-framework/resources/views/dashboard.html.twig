@@ -1,5 +1,9 @@
-<!-- PUT THE CODE IN THIS FILE TO THE SAME DIRECTORY AND FILE -->
-<!-- THIS REFLECTS THE CHANGES IN THE FILE -->
+{% comment %}
+
+PUT THE CODE IN THIS FILE TO THE SAME DIRECTORY AND FILE
+THIS REFLECTS THE CHANGES IN THE FILE
+
+{% endcomment %}
 
 {% extends "@UVDeskCoreFramework//Templates//layout.html.twig" %}
 
@@ -140,31 +144,8 @@
 			vertical-align: middle;
 			margin-right: 10px;
 		}
-		.uv-activity-wrapper .uv-activity-chart-col-rt {
-			width: 20%;
-			float: left;
-		}
-		.uv-activity-chart-col-rt ul {
-			padding: 0;
-			margin: 0;
-			list-style: none;
-		}
-		.uv-activity-chart-col-rt ul li {
-			margin-bottom: 10px
-		}
-		.uv-activity-chart-col-rt ul li span {
-			width: 100%;
-			display: inline-block;
-			color: #6f6f6f;
-		}
-		.uv-middle {
-			margin: 0 auto;
-			display: inline-block;
-			margin-top: 200px;
-			text-align: center;
-			width: 100%;
-		}
-		@media screen and (max-width: 1024px) {
+
+	@media screen and (max-width: 1024px) {
 			.uv-activity-wrapper .uv-activity-chart-col-lt {
 				width: 100%;
 				padding: 0;
@@ -212,7 +193,108 @@
   			bottom: 10px;
 			background: url("");
 		}
-
+		.uv-activity-wrapper .uv-activity-chart-col-rt {
+			width: 20%;
+			float: left;
+		}
+		.uv-activity-chart-col-rt ul {
+			padding: 0;
+			margin: 0;
+			list-style: none;
+		}
+		.uv-activity-chart-col-rt ul li {
+			margin-bottom: 10px
+		}
+		.uv-activity-chart-col-rt ul li span {
+			width: 100%;
+			display: inline-block;
+			color: #6f6f6f;
+		}
+		.uv-middle {
+			margin: 0 auto;
+			display: inline-block;
+			margin-top: 200px;
+			text-align: center;
+			width: 100%;
+		}
+		.homepage-row {
+			display: flex;
+			gap: 20px;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+		}
+		.homepage-row-1 {
+			justify-content: space-between;
+		}
+		.homepage-row-2 {
+			justify-content: flex-start;
+		}
+		.homepage-section {
+			background: #fff;
+			border-radius: 10px;
+			box-shadow: 0 2px 8px #eee;
+			padding: 20px;
+			text-align: left;
+			flex-grow: 1;
+			min-width: 280px;
+		}
+		.homepage-section-large {
+			flex-basis: 48%;
+		}
+		.homepage-section-small {
+			flex-basis: 30%;
+			margin-right: 20px;
+		}
+		.uv-brick {
+			margin-bottom: 0;
+			text-align: left;
+		}
+		.uv-brick-head h6 {
+			font-weight: 700;
+			color: #bdbdbd;
+			font-size: 14px;
+			text-transform: uppercase;
+			margin-bottom: 5px;
+		}
+		.uv-brick-head p {
+			font-size: 13px;
+			color: #666;
+			margin-top: 0;
+			margin-bottom: 15px;
+		}
+		.uv-brick-section {
+			text-align: left;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 30px;
+		}
+		.uv-brick-container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			width: 80px;
+			text-align: center;
+		}
+		.uv-brick-icon {
+			width: 50px;
+			height: 50px;
+			background-color: #8e6be6;
+			border-radius: 50%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+		.uv-brick-icon svg path {
+			fill: #fff !important;
+		}
+		.uv-brick-container p {
+			font-size: 11px;
+			font-weight: 600;
+			color: #333;
+			text-transform: uppercase;
+			margin: 0;
+		}
 		.dashboard-container {
 			font-family: Arial, sans-serif;
 			background: #faf9fb;
@@ -279,6 +361,15 @@
 			border-radius: 4px;
 			padding: 2px 8px;
 			margin-right: 2px;
+			cursor: pointer;
+			transition: background-color 0.2s;
+		}
+		.dashboard-chart-buttons button:hover {
+			background: #e0d7f0;
+		}
+		.dashboard-chart-buttons button.active-period {
+			background: #8e6be6;
+			color: white;
 		}
 		.dashboard-chart-canvas {
 			flex: 1;
@@ -372,34 +463,34 @@
 		<div class="dashboard-stats-row">
 			<div class="dashboard-stat-card">
 				<div class="dashboard-stat-title">Active<br>Tickets</div>
-				<div class="dashboard-stat-value">27</div>
+				<div class="dashboard-stat-value">{{ dashboardStats.activeTickets }}</div>
 			</div>
 			<div class="dashboard-stat-card">
 				<div class="dashboard-stat-title">Pending<br>Tickets</div>
-				<div class="dashboard-stat-value">10</div>
+				<div class="dashboard-stat-value">{{ dashboardStats.pendingTickets }}</div>
 			</div>
 			<div class="dashboard-stat-card">
 				<div class="dashboard-stat-title">Closed<br>Tickets</div>
-				<div class="dashboard-stat-value">20</div>
+				<div class="dashboard-stat-value">{{ dashboardStats.closedTickets }}</div>
 			</div>
 			<div class="dashboard-stat-card">
 				<div class="dashboard-stat-title">Active<br>Agents</div>
-				<div class="dashboard-stat-value">20</div>
+				<div class="dashboard-stat-value">{{ dashboardStats.activeAgents }}</div>
 			</div>
 		</div>
-		
+
 		<div class="dashboard-charts-row">
 
 			{# TICKET STATS #}
 			<div class="dashboard-chart-card">
 				<div class="dashboard-chart-title">TICKET STATISTICS</div>
 				<div class="dashboard-chart-header">
-					<span>Tickets Done Today <span style="color: #8e6be6; font-weight: bold;">50</span></span>
+					<span>Tickets Done Today <span id="tickets-today-count" style="color: #8e6be6; font-weight: bold;">{{ ticketChartData.todayCount }}</span></span>
 					<div class="dashboard-chart-buttons">
-						<button>1D</button>
-						<button>1M</button>
-						<button>1Y</button>
-						<button>Max</button>
+						<button id="chart-btn-1D" class="active-period">1D</button>
+						<button id="chart-btn-1M">1M</button>
+						<button id="chart-btn-1Y">1Y</button>
+						<button id="chart-btn-Max">Max</button>
 					</div>
 				</div>
 				<div class="dashboard-chart-canvas">
@@ -411,12 +502,12 @@
 			<div class="dashboard-chart-card">
 				<div class="dashboard-chart-title">AGENT STATISTICS</div>
 				<div class="dashboard-chart-header">
-					<span>Agent Activity Today <span style="color: #8e6be6; font-weight: bold;">79</span></span>
+					<span>Agent Activity Today <span id="agent-activity-today-count" style="color: #8e6be6; font-weight: bold;">{{ agentChartData.todayCount }}</span></span>
 					<div class="dashboard-chart-buttons">
-						<button>1D</button>
-						<button>1M</button>
-						<button>1Y</button>
-						<button>Max</button>
+						<button id="agent-chart-btn-1D" class="active-period">1D</button>
+						<button id="agent-chart-btn-1M">1M</button>
+						<button id="agent-chart-btn-1Y">1Y</button>
+						<button id="agent-chart-btn-Max">Max</button>
 					</div>
 				</div>
 				<div class="dashboard-chart-canvas">
@@ -446,53 +537,179 @@
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 	<script>
-		// Ticket Statistics Line Chart
-		var ctx1 = document.getElementById('ticketStatsChart').getContext('2d');
-		new Chart(ctx1, {
-			type: 'line',
-			data: {
-				labels: [0,1,2,3,4,5,6,7,8,9],
-				datasets: [{
-					label: '',
-					data: [300, 600, 700, 650, 400, 500, 200, 250, 650, 100],
-					borderColor: '#b08be6',
-					backgroundColor: 'rgba(176,139,230,0.1)',
-					pointBackgroundColor: '#b08be6',
-					pointBorderColor: '#fff',
-					tension: 0,
-					fill: true
-				}]
-			},
-			options: {
-				plugins: { legend: { display: false } },
-				scales: {
-					x: { display: true, grid: { display: false } },
-					y: { display: true, grid: { color: '#f3f1f7' }, beginAtZero: true }
-				}
-			}
-		});
+		// Initial chart data from server
+		let ticketChart;
+		let agentChart;
+		let currentTicketPeriod = '1D';
+		let currentAgentPeriod = '1D';
+		const initialTicketChartData = {{ ticketChartData|json_encode|raw }};
+		const initialAgentChartData = {{ agentChartData|json_encode|raw }};
 
-		// Agent Statistics Bar Chart
-		var ctx2 = document.getElementById('agentStatsChart').getContext('2d');
-		new Chart(ctx2, {
-			type: 'bar',
-			data: {
-				labels: [1,2,3,4,5,6,7,8,9,10,11,12],
-				datasets: [{
-					label: '',
-					data: [300, 500, 200, 250, 400, 500, 350, 400, 100, 600, 200, 200],
-					backgroundColor: '#b08be6',
-					borderRadius: 6
-				}]
-			},
-			options: {
-				plugins: { legend: { display: false } },
-				scales: {
-					x: { display: true, grid: { display: false } },
-					y: { display: true, grid: { color: '#f3f1f7' }, beginAtZero: true }
-				}
+		// Initialize Ticket Statistics Line Chart
+		function initTicketChart(chartData) {
+			const ctx1 = document.getElementById('ticketStatsChart').getContext('2d');
+			
+			if (ticketChart) {
+				ticketChart.destroy();
 			}
-		});
+			
+			ticketChart = new Chart(ctx1, {
+				type: 'line',
+				data: {
+					labels: chartData.labels,
+					datasets: [{
+						label: 'Tickets',
+						data: chartData.data,
+						borderColor: '#b08be6',
+						backgroundColor: 'rgba(176,139,230,0.1)',
+						pointBackgroundColor: '#b08be6',
+						pointBorderColor: '#fff',
+						tension: 0.4,
+						fill: true
+					}]
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: { 
+						legend: { display: false } 
+					},
+					scales: {
+						x: { 
+							display: true, 
+							grid: { display: false } 
+						},
+						y: { 
+							display: true, 
+							grid: { color: '#f3f1f7' }, 
+							beginAtZero: true,
+							ticks: {
+								precision: 0
+							}
+						}
+					}
+				}
+			});
+		}
+
+		// Initialize Agent Statistics Bar Chart
+		function initAgentChart(chartData) {
+			const ctx2 = document.getElementById('agentStatsChart').getContext('2d');
+			
+			if (agentChart) {
+				agentChart.destroy();
+			}
+			
+			agentChart = new Chart(ctx2, {
+				type: 'bar',
+				data: {
+					labels: chartData.labels,
+					datasets: [{
+						label: 'Activity',
+						data: chartData.data,
+						backgroundColor: '#b08be6',
+						borderRadius: 6
+					}]
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: { 
+						legend: { display: false } 
+					},
+					scales: {
+						x: { 
+							display: true, 
+							grid: { display: false } 
+						},
+						y: { 
+							display: true, 
+							grid: { color: '#f3f1f7' }, 
+							beginAtZero: true,
+							ticks: {
+								precision: 0
+							}
+						}
+					}
+				}
+			});
+		}
+
+		// Load ticket chart data for specific period
+		function loadTicketChartData(period) {
+			// Update button states
+			document.querySelectorAll('[id^="chart-btn-"]').forEach(btn => {
+				btn.classList.remove('active-period');
+			});
+			document.getElementById(`chart-btn-${period}`).classList.add('active-period');
+			
+			// Make AJAX call to get new data
+			fetch('{{ path("helpdesk_member_dashboard_chart_xhr") }}?period=' + period, {
+				method: 'GET',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				// Update chart with new data
+				initTicketChart(data);
+				
+				// Update "Tickets Done Today" count
+				document.getElementById('tickets-today-count').textContent = data.todayCount;
+				
+				currentTicketPeriod = period;
+			})
+			.catch(error => {
+				console.error('Error loading ticket chart data:', error);
+			});
+		}
+
+		// Load agent chart data for specific period
+		function loadAgentChartData(period) {
+			// Update button states
+			document.querySelectorAll('[id^="agent-chart-btn-"]').forEach(btn => {
+				btn.classList.remove('active-period');
+			});
+			document.getElementById(`agent-chart-btn-${period}`).classList.add('active-period');
+			
+			// Make AJAX call to get new data
+			fetch('{{ path("helpdesk_member_dashboard_agent_chart_xhr") }}?period=' + period, {
+				method: 'GET',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				// Update chart with new data
+				initAgentChart(data);
+				
+				// Update "Agent Activity Today" count
+				document.getElementById('agent-activity-today-count').textContent = data.todayCount;
+				
+				currentAgentPeriod = period;
+			})
+			.catch(error => {
+				console.error('Error loading agent chart data:', error);
+			});
+		}
+
+		// Initialize charts with server data
+		initTicketChart(initialTicketChartData);
+		initAgentChart(initialAgentChartData);
+
+		// Add event listeners for ticket chart period buttons
+		document.getElementById('chart-btn-1D').addEventListener('click', () => loadTicketChartData('1D'));
+		document.getElementById('chart-btn-1M').addEventListener('click', () => loadTicketChartData('1M'));
+		document.getElementById('chart-btn-1Y').addEventListener('click', () => loadTicketChartData('1Y'));
+		document.getElementById('chart-btn-Max').addEventListener('click', () => loadTicketChartData('Max'));
+
+		// Add event listeners for agent chart period buttons
+		document.getElementById('agent-chart-btn-1D').addEventListener('click', () => loadAgentChartData('1D'));
+		document.getElementById('agent-chart-btn-1M').addEventListener('click', () => loadAgentChartData('1M'));
+		document.getElementById('agent-chart-btn-1Y').addEventListener('click', () => loadAgentChartData('1Y'));
+		document.getElementById('agent-chart-btn-Max').addEventListener('click', () => loadAgentChartData('Max'));
 
 		// Calendar logic
 		const highlightDates = {
