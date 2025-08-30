@@ -67,12 +67,22 @@
         border-radius: 18px;
         font-size: 14px;
         line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .message-content strong {
+        font-weight: 600;
+    }
+
+    .message-content em {
+        font-style: italic;
     }
 
     .bot .message-content {
         background: #e8f5e8;
         color: #2c5e2c;
         border-bottom-left-radius: 4px;
+        white-space: normal;
     }
 
     .user .message-content {
@@ -123,6 +133,12 @@
     .chat-input:focus {
         border-color: #007bff;
         box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    .chat-input:disabled {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+        opacity: 0.6;
     }
 
     .send-btn {
@@ -241,23 +257,12 @@ $(function() {
     const typingIndicator = $('#typingIndicator');
     const faqButtons = $('.faq-btn');
 
-    // Sample FAQ responses
-    const faqResponses = {
-        '{% trans %}How do I reset my password?{% endtrans %}': '{% trans %}You can reset your password by clicking on "Forgot Password" on the login page. We\'ll send a reset link to your email address.{% endtrans %}',
-        '{% trans %}What are your business hours?{% endtrans %}': '{% trans %}Our support team is available Monday to Friday from 9 AM to 6 PM EST. Emergency support is available 24/7 for critical issues.{% endtrans %}',
-        '{% trans %}How can I contact support?{% endtrans %}': '{% trans %}You can contact support by creating a ticket through our helpdesk system, emailing support@company.com, or calling our hotline at 1-800-HELP-NOW.{% endtrans %}',
-        '{% trans %}Where can I find documentation?{% endtrans %}': '{% trans %}Our documentation is available in the Knowledgebase section. You can browse articles by category or use the search function to find specific topics.{% endtrans %}'
-    };
-
-    // Default response for unknown questions
-    const defaultResponse = '{% trans %}I\'m not sure about that. Please try asking something else or contact our support team for assistance.{% endtrans %}';
-
     // Add message to chat
     function addMessage(text, isUser = false) {
         const messageClass = isUser ? 'user' : 'bot';
         const messageHtml = `
             <div class="message ${messageClass}">
-                <div class="message-content">${text}</div>
+                <div class="message-content">${isUser ? $('<div>').text(text).html() : text}</div>
             </div>
         `;
         chatMessages.append(messageHtml);
@@ -275,28 +280,69 @@ $(function() {
         typingIndicator.hide();
     }
 
-    // Get bot response
-    function getBotResponse(question) {
-        // Simple keyword matching for demo purposes
-        const lowerQuestion = question.toLowerCase();
-        
-        if (lowerQuestion.includes('password') || lowerQuestion.includes('reset')) {
-            return faqResponses['{% trans %}How do I reset my password?{% endtrans %}'];
-        } else if (lowerQuestion.includes('hour') || lowerQuestion.includes('time') || lowerQuestion.includes('business')) {
-            return faqResponses['{% trans %}What are your business hours?{% endtrans %}'];
-        } else if (lowerQuestion.includes('contact') || lowerQuestion.includes('support') || lowerQuestion.includes('help')) {
-            return faqResponses['{% trans %}How can I contact support?{% endtrans %}'];
-        } else if (lowerQuestion.includes('document') || lowerQuestion.includes('guide') || lowerQuestion.includes('manual')) {
-            return faqResponses['{% trans %}Where can I find documentation?{% endtrans %}'];
-        } else {
-            return defaultResponse;
-        }
+    // Get bot response from AI API
+    function getBotResponse(message) {
+        return new Promise((resolve, reject) => {
+            // Get current URL and use the same path for POST requests
+            const currentUrl = window.location.href;
+            
+            console.log('Making request to:', currentUrl);
+            console.log('Message:', message);
+            
+            $.ajax({
+                url: currentUrl,
+                method: 'POST',
+                data: {
+                    message: message
+                },
+                dataType: 'json',
+                timeout: 30000, // 30 seconds timeout
+                success: function(data) {
+                    console.log('API Response:', data);
+                    if (data.response) {
+                        resolve(data.response);
+                    } else {
+                        resolve('I apologize, but I encountered an issue processing your request. Please try again.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Chat API Error:', error);
+                    console.error('Status:', status);
+                    console.error('Response Text:', xhr.responseText);
+                    console.error('Status Code:', xhr.status);
+                    
+                    // Try to parse the response
+                    let errorMsg = 'Technical difficulties';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.response) {
+                            errorMsg = response.response;
+                        }
+                    } catch (e) {
+                        // If it's not JSON, show the raw response
+                        if (xhr.responseText) {
+                            errorMsg = 'Server error: ' + xhr.responseText.substring(0, 200);
+                        }
+                    }
+                    
+                    if (status === 'timeout') {
+                        resolve('I apologize for the delay. Please try asking your question again.');
+                    } else {
+                        resolve(errorMsg);
+                    }
+                }
+            });
+        });
     }
 
     // Send message
-    function sendMessage() {
+    async function sendMessage() {
         const message = chatInput.val().trim();
         if (!message) return;
+
+        // Disable input and button during processing
+        chatInput.prop('disabled', true);
+        sendBtn.prop('disabled', true);
 
         // Add user message
         addMessage(message, true);
@@ -305,12 +351,20 @@ $(function() {
         // Show typing indicator
         showTyping();
         
-        // Simulate bot thinking
-        setTimeout(() => {
+        try {
+            // Get AI response
+            const response = await getBotResponse(message);
             hideTyping();
-            const response = getBotResponse(message);
             addMessage(response);
-        }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
+        } catch (error) {
+            hideTyping();
+            addMessage('I apologize, but I encountered an error processing your request. Please try again.');
+        } finally {
+            // Re-enable input and button
+            chatInput.prop('disabled', false);
+            sendBtn.prop('disabled', false);
+            chatInput.focus();
+        }
     }
 
     // Event listeners
@@ -318,6 +372,7 @@ $(function() {
     
     chatInput.on('keypress', function(e) {
         if (e.which === 13) { // Enter key
+            e.preventDefault();
             sendMessage();
         }
     });

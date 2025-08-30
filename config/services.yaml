@@ -7,6 +7,7 @@ parameters:
     locale: 'en'
     uvdesk.version: "v1.1.7"
     google_recaptcha_site_key: '%env(GOOGLE_RECAPTCHA_SITE_KEY)%'
+    google_ai_api_key: '%env(GOOGLE_AI_API_KEY)%'
 
 services:
     # default configuration for services in *this* file

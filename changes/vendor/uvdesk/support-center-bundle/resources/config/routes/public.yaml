@@ -53,3 +53,9 @@ helpdesk_knowledgebase_tag:
 helpdesk_knowledgebase_chatbot:
     path:     /chatbot
     controller: Webkul\UVDesk\SupportCenterBundle\Controller\Website::chatbot
+
+# Chatbot API Route
+helpdesk_knowledgebase_chatbot_api:
+    path:     /chatbot/api
+    controller: Webkul\UVDesk\SupportCenterBundle\Controller\Website::chatAPI
+    methods: [POST]

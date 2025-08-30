@@ -10,6 +10,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Webkul\UVDesk\CoreFrameworkBundle\Services\UserService;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Webkul\UVDesk\CoreFrameworkBundle\Entity as CoreEntities; 
 use Webkul\UVDesk\SupportCenterBundle\Entity as SupportEntities;
 
@@ -22,12 +23,14 @@ class Website extends AbstractController
     private $userService;
     private $translator;
     private $constructContainer;
+    private $httpClient;
 
-    public function __construct(UserService $userService, TranslatorInterface $translator, ContainerInterface $constructContainer)
+    public function __construct(UserService $userService, TranslatorInterface $translator, ContainerInterface $constructContainer, HttpClientInterface $httpClient)
     {
         $this->userService = $userService;
         $this->translator = $translator;
         $this->constructContainer = $constructContainer;
+        $this->httpClient = $httpClient;
     }
 
     private function isKnowledgebaseActive()
@@ -425,9 +428,205 @@ class Website extends AbstractController
     {
         $this->isKnowledgebaseActive();
 
+        // If it's a POST request, handle API call
+        if ($request->getMethod() === 'POST') {
+            return $this->handleChatAPI($request);
+        }
+
+        // If it's a GET request, render the template
         return $this->render('@UVDeskSupportCenter/Knowledgebase/chatbot.html.twig', [
             'searchDisable' => true,
         ]);
+    }
+
+    private function handleChatAPI(Request $request)
+    {
+        // Debug log to check if method is called
+        error_log('ChatAPI method called');
+        
+        try {
+            // Get the message from the request
+            $message = $request->request->get('message');
+            error_log('Message received: ' . $message);
+            
+            if (empty($message)) {
+                error_log('Empty message error');
+                return new Response(json_encode(['error' => 'Message is required']), 400, ['Content-Type' => 'application/json']);
+            }
+
+            // Try multiple ways to get the API key
+            $apiKey = null;
+            try {
+                $apiKey = $this->getParameter('google_ai_api_key');
+                error_log('API Key from parameter: ' . (!empty($apiKey) ? 'Found' : 'Not found'));
+            } catch (\Exception $e) {
+                error_log('Parameter error: ' . $e->getMessage());
+            }
+            
+            if (empty($apiKey)) {
+                $apiKey = $_ENV['GOOGLE_AI_API_KEY'] ?? null;
+                error_log('API Key from _ENV: ' . (!empty($apiKey) ? 'Found' : 'Not found'));
+            }
+            
+            if (empty($apiKey)) {
+                $apiKey = getenv('GOOGLE_AI_API_KEY');
+                error_log('API Key from getenv: ' . (!empty($apiKey) ? 'Found' : 'Not found'));
+            }
+            
+            if (empty($apiKey)) {
+                error_log('API key not configured error - all methods failed');
+                return new Response(json_encode(['response' => 'API key not configured. Please check your .env file.']), 200, ['Content-Type' => 'application/json']);
+            }
+
+            // Try to use injected HTTP client, fallback to cURL if not available
+            try {
+                $httpClient = $this->httpClient;
+                error_log('Using Symfony HTTP client');
+            } catch (\Exception $e) {
+                error_log('Symfony HTTP client not available, using cURL: ' . $e->getMessage());
+                $httpClient = null;
+            }
+            
+            // Use Gemini 2.0 Flash endpoint
+            $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=' . $apiKey;
+            
+            $payload = [
+                'contents' => [
+                    [
+                        'parts' => [
+                            [
+                                'text' => "You are a helpful customer support assistant for a helpdesk system. Please provide a concise, professional, and helpful response (maximum 300 words) to the following question. Use simple formatting with **bold** for important points and numbered lists when appropriate: " . $message
+                            ]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'topK' => 40,
+                    'topP' => 0.95,
+                    'maxOutputTokens' => 512,
+                ]
+            ];
+
+            error_log('Making API request to Google AI: ' . $url);
+            error_log('Payload: ' . json_encode($payload));
+            
+            if ($httpClient !== null) {
+                // Use Symfony HTTP client
+                $response = $httpClient->request('POST', $url, [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => $payload,
+                    'timeout' => 30
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                $responseContent = $response->getContent();
+            } else {
+                // Use cURL as fallback
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                ]);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                
+                $responseContent = curl_exec($ch);
+                $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+                
+                if ($curlError) {
+                    error_log('cURL Error: ' . $curlError);
+                    return new Response(json_encode(['response' => 'Network error: ' . $curlError]), 200, ['Content-Type' => 'application/json']);
+                }
+            }
+
+            error_log('HTTP Status Code: ' . $statusCode);
+            error_log('Raw API Response: ' . $responseContent);
+            
+            $responseData = json_decode($responseContent, true);
+            
+            if ($statusCode !== 200) {
+                error_log('API Error - Status: ' . $statusCode . ', Response: ' . $responseContent);
+                return new Response(json_encode(['response' => 'API request failed with status ' . $statusCode . '. Please check your API key and quota.']), 200, ['Content-Type' => 'application/json']);
+            }
+            
+            if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                $aiResponse = $responseData['candidates'][0]['content']['parts'][0]['text'];
+                error_log('AI Response successful: ' . substr($aiResponse, 0, 100) . '...');
+                
+                // Clean up and format the AI response
+                $formattedResponse = $this->formatChatbotResponse($aiResponse);
+                
+                return new Response(json_encode(['response' => $formattedResponse]), 200, ['Content-Type' => 'application/json']);
+            } else {
+                error_log('No valid response from AI API. Full response: ' . json_encode($responseData));
+                
+                // Check for error in response
+                if (isset($responseData['error'])) {
+                    $errorMsg = $responseData['error']['message'] ?? 'Unknown API error';
+                    error_log('API Error: ' . $errorMsg);
+                    return new Response(json_encode(['response' => 'API Error: ' . $errorMsg]), 200, ['Content-Type' => 'application/json']);
+                }
+                
+                // Fallback response if AI doesn't work properly
+                return new Response(json_encode(['response' => 'I apologize, but I am currently unable to process your request. Please try again later or contact our support team for assistance.']), 200, ['Content-Type' => 'application/json']);
+            }
+
+        } catch (\Exception $e) {
+            // Log the error (you might want to use a logger service)
+            error_log('Chatbot API Error: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return a friendly error message
+            return new Response(json_encode(['response' => 'Exception: ' . $e->getMessage()]), 200, ['Content-Type' => 'application/json']);
+        }
+    }
+
+    public function chatAPI(Request $request)
+    {
+        return $this->handleChatAPI($request);
+    }
+
+    private function formatChatbotResponse($text)
+    {
+        // Clean up the response text
+        $formatted = $text;
+        
+        // Convert **bold** to <strong>
+        $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+        
+        // Convert *italic* to <em>
+        $formatted = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $formatted);
+        
+        // Convert numbered lists
+        $formatted = preg_replace('/^(\d+)\.\s/m', '<br>$1. ', $formatted);
+        
+        // Convert bullet points
+        $formatted = preg_replace('/^\*\s/m', '<br>• ', $formatted);
+        
+        // Clean up multiple line breaks
+        $formatted = preg_replace('/\n\s*\n/', '<br><br>', $formatted);
+        $formatted = preg_replace('/\n/', '<br>', $formatted);
+        
+        // Remove excessive line breaks at the start
+        $formatted = preg_replace('/^(<br>\s*)+/', '', $formatted);
+        
+        // Limit response length for better UX
+        if (strlen($formatted) > 2000) {
+            $formatted = substr($formatted, 0, 1950) . '...<br><br><em>Response truncated for readability.</em>';
+        }
+        
+        // Clean up any HTML injection attempts (basic security)
+        $formatted = strip_tags($formatted, '<strong><em><br><p><ul><li><ol>');
+        
+        return $formatted;
     }
 
     /**
